@@ -15,14 +15,15 @@ const Item = styled(Paper)(({ theme }) => ({
 }));
 
 const VideoArea = ({rtcClient}) => {
+  if (rtcClient===null) return <></>;
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
-          <VideoLocal name={rtcClient.localPeerName}/>
+          <VideoLocal rtcClient={rtcClient}/>
         </Grid>
         <Grid item xs={12} sm={6}>
-          <VideoRemote name={rtcClient.remotePeerName}/>
+          <VideoRemote rtcClient={rtcClient}/>
         </Grid>
       </Grid>
     </Box>

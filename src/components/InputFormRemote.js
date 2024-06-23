@@ -26,7 +26,7 @@ function Copyright(props) {
 
 const defaultTheme = createTheme();
 
-export default function SignIn({rtcClient,setRtcClient}) {
+export default function SignIn({rtcClient}) {
   const label ='相手の名前'
   const [desabled,setDisabled]=useState(true);
   const [name,setName]=useState('')
@@ -35,20 +35,21 @@ export default function SignIn({rtcClient,setRtcClient}) {
     const disabled = name === '';
     setDisabled(disabled);
   },[name]);
-  const initializeRemotePeer = useCallback((e) =>{
-    rtcClient.remotePeerName=name;
-    setRtcClient(rtcClient);
+  const initializeRemotePeer = useCallback(async (e) =>{
+    await rtcClient.connect(name);
     e.preventDefault();
     },
-    [name,rtcClient,setRtcClient]);  
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get('email'),
-      password: data.get('password'),
-    });
-  };
+    [name,rtcClient]);  
+  // const handleSubmit = (event) => {
+  //   event.preventDefault();
+  //   const data = new FormData(event.currentTarget);
+  //   console.log({
+  //     email: data.get('email'),
+  //     password: data.get('password'),
+  //   });
+  // };
+
+
   if (rtcClient.localPeerName ==='')return <></>;
   if (rtcClient.remotePeerName !== '') return <></>;
 
@@ -77,11 +78,11 @@ export default function SignIn({rtcClient,setRtcClient}) {
               onChange={(e)=>setName(e.target.value)}
               onCompositionEnd={()=>setIscomposed(false)}
               onCompositionStart={()=>setIscomposed(true)}
-              onKeyDown={(e)=>{
+              onKeyDown={async (e)=>{
                 console.log({e});
                 if (isComoised) return;
                 if (e.target.value==='')return;
-                if (e.key==='Enter') {initializeRemotePeer(e)}
+                if (e.key==='Enter') await initializeRemotePeer(e);
                 }}
               value = {name}
               label={label}
@@ -92,7 +93,7 @@ export default function SignIn({rtcClient,setRtcClient}) {
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
               disabled={desabled}
-              onClick={(e)=>initializeRemotePeer(e)}
+              onClick={async (e)=>await initializeRemotePeer(e)}
             >
               決定
             </Button>

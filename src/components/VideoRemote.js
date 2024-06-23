@@ -1,10 +1,10 @@
-import React, {useEffect, useRef} from "react";
+import React from "react";
 import Video from './Video'
 
-const VideoRemote =({name}) => {
-    const videoRef =null;
+const VideoRemote =({rtcClient}) => {
+    const videoRef =rtcClient.remoteVideoRef;
 
-    return <Video isRemote={false} name={name} videoRef={videoRef}/>
+    return <Video isRemote={false} name={rtcClient.remotePeerName} videoRef={videoRef}/>
 }
 
 export default VideoRemote;
