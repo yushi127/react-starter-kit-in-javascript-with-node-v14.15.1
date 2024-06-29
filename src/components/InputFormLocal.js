@@ -35,8 +35,8 @@ export default function SignIn({ rtcClient}) {
     const disabled = name === '';
     setDisabled(disabled);
   },[name]);
-  const initializeLocalPeer = useCallback((e) =>{
-    rtcClient.startListening(name);
+  const initializeLocalPeer = useCallback(async (e) =>{
+    await rtcClient.startListening(name);
     // e.preventDefault();
     },
     [name,rtcClient]);  
@@ -76,10 +76,10 @@ export default function SignIn({ rtcClient}) {
               onChange={(e)=>setName(e.target.value)}
               onCompositionEnd={()=>setIscomposed(false)}
               onCompositionStart={()=>setIscomposed(true)}
-              onKeyDown={(e)=>{
+              onKeyDown={async (e)=>{
                 if (isComposed) return;
                 if (e.target.value==='')return;
-                if (e.key==='Enter') {initializeLocalPeer(e)}
+                if (e.key==='Enter') {await initializeLocalPeer(e)}
               }}
               value = {name}
               label={label}
@@ -90,7 +90,7 @@ export default function SignIn({ rtcClient}) {
               disabled={disabled}
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
-              onClick={(e)=>initializeLocalPeer(e)}
+              onClick={async (e)=>await initializeLocalPeer(e)}
             >
               決定
             </Button>

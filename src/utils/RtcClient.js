@@ -1,15 +1,20 @@
-import FirebaseSignallingClient from "./firebaseSignallingClient";
+import firebaseSignallingClient from "./firebaseSignallingClient";
+
+const INITIAL_AUDIO_ENABLED = false;
 
 export default class RtcClient{
     constructor(remoteVideoRef,setRtcClient){
         const config={iceServers:[{urls:'stun:stun.stunprotocol.org'}]};
         this.rtcPeerConnection=new RTCPeerConnection(config);
-        this.FirebaseSignallingClient=new FirebaseSignallingClient();
+        this.firebaseSignallingClient=new firebaseSignallingClient();
         this.localPeerName='';
         this.remotePeerName='';
         this._setRtcClient=setRtcClient;
         this.mediaStream = null;
         this.remoteVideoRef=remoteVideoRef;
+    }
+    get initialAudioMuted(){
+        return !INITIAL_AUDIO_ENABLED;
     }
     setRtcClient(){
         this._setRtcClient(this)//kokowakaran
@@ -28,24 +33,6 @@ export default class RtcClient{
             console.error(e);
         }
     };
-    // async answer(sender, sessionDescription) {
-    //     try {
-    //         this.remotePeerName = sender;
-    //         this.setOnicecandidateCallback();
-    //         this.setOntrack();
-    
-    //         await this.setRemoteDescription(sessionDescription);
-    //         const answer = await this.rtcPeerConnection.createAnswer();
-    //         await this.rtcPeerConnection.setLocalDescription(answer);
-    
-    //         // ローカルディスクリプションが設定されているか確認するためのログ
-    //         console.log("Answer localDescription:", this.rtcPeerConnection.localDescription);
-    
-    //         await this.sendAnswer();
-    //     } catch (e) {
-    //         console.error("Error in answer method:", e);
-    //     }
-    // };
 
     async getUserMedia(){
         try{
@@ -65,6 +52,7 @@ export default class RtcClient{
         this.addVideoTrack();
     }
     addAudioTrack(){
+        this.audioTrack.enabled=INITIAL_AUDIO_ENABLED;
         this.rtcPeerConnection.addTrack(this.audioTrack,this.mediaStream);
         // this.rtcPeerConnection.addTrack();
     }
@@ -76,6 +64,10 @@ export default class RtcClient{
     }
     get videoTrack(){
         return this.mediaStream.getVideoTracks()[0];
+    }
+    toggleAudio(){
+        this.audioTrack.enabled = !this.audioTrack.enabled;
+        this.setRtcClient();
     }
     async offer(){
         const sessionDescription = await this.createOffer();
@@ -98,9 +90,9 @@ export default class RtcClient{
         }
     }
     async sendOffer(){
-        this.FirebaseSignallingClient.setPeerNames(this.localPeerName,this.remotePeerName)
+        this.firebaseSignallingClient.setPeerNames(this.localPeerName,this.remotePeerName)
         console.log(this.localPeerName)
-        await this.FirebaseSignallingClient.sendOffer(this.localDescription);
+        await this.firebaseSignallingClient.sendOffer(this.localDescription);
     }
     setOntrack(){
         this.rtcPeerConnection.ontrack=(rtcTrackEvent)=>{
@@ -128,38 +120,60 @@ export default class RtcClient{
 
 
     async sendAnswer(){
-        this.FirebaseSignallingClient.setPeerNames(
+        this.firebaseSignallingClient.setPeerNames(
             this.localPeerName,this.remotePeerName
         );
-        await this.FirebaseSignallingClient.sendAnswer(this.localDescription);
+        await this.firebaseSignallingClient.sendAnswer(this.localDescription);
         console.log(this.localDescription)
     }
 
+    async saveRecevedSessionDescription(sessionDescription){
+        try{
+            await this.setRemoteDescription(sessionDescription);
+        }catch(e){
+            console.error(e);
+        }
+    }
 
-    
+    async addIceCandidate(candidate){
+        try{
+            const iceCandidate = new RTCIceCandidate(candidate);
+            await this.rtcPeerConnection.addIceCandidate(iceCandidate);
+        }catch(e){
+            console.error(e);
+        }
+    }
 
     setOnicecandidateCallback(){
-        this.rtcPeerConnection.onicecandidate=(candidate)=>{
+        this.rtcPeerConnection.onicecandidate=async ({candidate})=>{
             if(candidate){
                 //``remoteへcandidateを通知する
+                console.log({candidate});
+                await this.firebaseSignallingClient.sendCandidate(candidate.toJSON());
             }
         }
     }
-    startListening(localPeerName){
+    async startListening(localPeerName){
         this.localPeerName=localPeerName
         this.setRtcClient();
-        this.FirebaseSignallingClient.database
+        await this.firebaseSignallingClient.remove();
+        this.firebaseSignallingClient.database
         .ref(localPeerName)
         .on('value',async(snapshot)=>{
             const data = snapshot.val();
             if(data === null)return;
-            const{sender,sessionDescription,type}=data;
+            const{candidate, sender,sessionDescription,type}=data;
             switch(type){
                 case 'offer':
                     await this.answer(sender,sessionDescription);
                     break;
+                case 'answer':
+                    this.saveRecevedSessionDescription(sessionDescription)
+                case 'candidate':
+                    await this.addIceCandidate(candidate);
                 default:
-                    break;
+                    this.setRtcClient();
+                break;
             }
         })
     }

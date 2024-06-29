@@ -5,14 +5,24 @@ import 'firebase/database'
 
 export default class firebaseSignallingClient{
     constructor(){
+        const{
+            REACT_APP_FIREBASE_API_KEY,
+            REACT_APP_FIREBASE_AUTH_DOMAIN,
+            REACT_APP_FIREBASE_DATABASE_URL,
+            REACT_APP_FIREBASE_PROJECT_ID,
+            REACT_APP_FIREBASE_STORAGE_BUCKET,
+            REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+            REACT_APP_FIREBASE_APP_ID,
+        }=process.env;
+
         const firebaseConfig = {
-            apiKey: "AIzaSyBSeo606_VRRqzT4augofoX5P1AyHMkges",
-            authDomain: "study-webrtc-react.firebaseapp.com",
-            databaseURL: "https://study-webrtc-react-default-rtdb.firebaseio.com",
-            projectId: "study-webrtc-react",
-            storageBucket: "study-webrtc-react.appspot.com",
-            messagingSenderId: "62471008729",
-            appId: "1:62471008729:web:0d2960d1e4575c0e1269c8"
+            apiKey: REACT_APP_FIREBASE_API_KEY,
+            authDomain: REACT_APP_FIREBASE_AUTH_DOMAIN,
+            databaseURL: REACT_APP_FIREBASE_DATABASE_URL,
+            projectId: REACT_APP_FIREBASE_PROJECT_ID,
+            storageBucket: REACT_APP_FIREBASE_STORAGE_BUCKET,
+            messagingSenderId: REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+            appId: REACT_APP_FIREBASE_APP_ID
           };
           
           // Initialize Firebase
@@ -50,5 +60,15 @@ export default class firebaseSignallingClient{
             
             })
         
+    }
+    async sendCandidate(candidate){
+        await this.targetRef.set({
+            type:'candidate',
+            sender:this.localPeerName,
+            candidate,
+        })
+    }
+    async remove(path){
+        await this.database.ref(path).remove();
     }
 }
