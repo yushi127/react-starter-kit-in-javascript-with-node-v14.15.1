@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
-const firebaseSettings = require('./.firebase-config');
+const firebaseSettings = require('./.firebase-config.js');
 
 const ENV_LOCAL = `
 REACT_APP_FIREBASE_API_KEY='${firebaseSettings.apiKey}'
